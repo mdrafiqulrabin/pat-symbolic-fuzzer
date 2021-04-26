@@ -39,6 +39,8 @@ import ast
 import astor
 import z3
 
+print_unsat = 0
+
 
 # Function Summaries
 
@@ -394,7 +396,9 @@ def checkpoint(z3solver):
 
 
 class SimpleSymbolicFuzzer(SimpleSymbolicFuzzer):
+
     def solve_path_constraint(self, path):
+        global print_unsat
         try:
             # re-initializing does not seem problematic.
             # a = z3.Int('a').get_id() remains the same.
@@ -407,6 +411,11 @@ class SimpleSymbolicFuzzer(SimpleSymbolicFuzzer):
                 st = 'self.z3.add(%s)' % ', '.join(constraints)
                 eval(st)
                 if self.z3.check() != z3.sat:
+                    if print_unsat == 0:
+                        print ("-------------------------------------------------------------------------------------------------")
+                        print("The following is an Unsat Core among the following sets of path constraints: ", self.z3.unsat_core)
+                        print ("-------------------------------------------------------------------------------------------------")
+                        print_unsat = 1
                     return {}
                 m = self.z3.model()
                 solutions = {d.name(): m[d] for d in m.decls()}
@@ -429,6 +438,8 @@ class SimpleSymbolicFuzzer(SimpleSymbolicFuzzer):
 
 class SimpleSymbolicFuzzer(SimpleSymbolicFuzzer):
     def fuzz(self):
+        global print_unsat
+        print_unsat = 0
         for i in range(self.max_tries):
             res = self.solve_path_constraint(self.get_next_path())
             if res:
@@ -673,6 +684,7 @@ class AdvancedSymbolicFuzzer(AdvancedSymbolicFuzzer):
 # Solving Path Constraints
 class AdvancedSymbolicFuzzer(AdvancedSymbolicFuzzer):
     def solve_path_constraint(self, path):
+        global print_unsat 
         # re-initializing does not seem problematic.
         # a = z3.Int('a').get_id() remains the same.
         constraints = self.extract_constraints(path)
@@ -688,6 +700,11 @@ class AdvancedSymbolicFuzzer(AdvancedSymbolicFuzzer):
             st = 'self.z3.add(%s)' % ', '.join(constraints)
             eval(st)
             if self.z3.check() != z3.sat:
+                if print_unsat == 0:
+                    print ("-------------------------------------------------------------------------------------------------")
+                    print("The following is an Unsat Core among the following sets of path constraints: ", self.z3.unsat_core)
+                    print ("-------------------------------------------------------------------------------------------------")
+                    print_unsat = 1
                 return {}
             m = self.z3.model()
             solutions = {d.name(): m[d] for d in m.decls()}
@@ -752,6 +769,8 @@ class AdvancedSymbolicFuzzer(AdvancedSymbolicFuzzer):
 
 class AdvancedSymbolicFuzzer(AdvancedSymbolicFuzzer):
     def fuzz(self):
+        global print_unsat
+        print_unsat = 0
         for i in range(self.max_tries):
             res = self.solve_path_constraint(self.get_next_path())
             if res:
