@@ -1,5 +1,9 @@
 from SymbolicFuzzer import *
-from examples.check_triangle import *  # TODO - at least five examples
+from examples.check_triangle import *
+from examples.check_evenodd import *
+from examples.calculate_div import *
+from examples.abs_value import *
+from examples.abs_max import *
 
 
 def pretty_print_paths(paths_):
@@ -38,7 +42,7 @@ def pretty_print_results(n, predicates_, results_):
 
 
 if __name__ == "__main__":
-    fn_list = [check_triangle]  # TODO - at least five examples
+    fn_list = [check_triangle, is_even, abs_value, abs_max, calculate_div]
     for i, fn_example in enumerate(fn_list):
         msg = "Example #{}:".format(i + 1)
         print("\n", msg, "\n", "-" * len(msg), "\n")

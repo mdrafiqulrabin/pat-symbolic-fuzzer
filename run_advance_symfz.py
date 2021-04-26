@@ -1,9 +1,11 @@
 from SymbolicFuzzer import *
-from examples.gcd import *  # TODO - at least five examples
+from examples.gcd import *
+from examples.roots import *
+from examples.check_triangle import *
 
 
 def pretty_print_paths(paths_):
-    msg = "Number of {} paths:".format(len(paths_))
+    msg = "Number of paths: {}".format(len(paths_))
     print("\n", msg, "\n", "-" * len(msg), "\n")
     for idx_p, path_ in enumerate(paths_):
         path_ = path_.get_path_to_root()
@@ -39,7 +41,7 @@ def pretty_print_results(n, predicates_, results_):
 
 
 if __name__ == "__main__":
-    fn_list = [gcd]  # TODO - at least five examples
+    fn_list = [gcd, roots1, roots2, roots3, check_triangle]
     for i, fn_example in enumerate(fn_list):
         msg = "Example #{}:".format(i + 1)
         print("\n", msg, "\n", "-" * len(msg), "\n")
@@ -51,7 +53,7 @@ if __name__ == "__main__":
         gdot = show_cfg(fn_example)
         gdot.render('outputs/{}'.format(fn_example.__name__), view=False)
 
-        # SimpleSymbolicFuzzer
+        # AdvancedSymbolicFuzzer
         advfz_ex = AdvancedSymbolicFuzzer(fn_example, max_iter=10, max_tries=10, max_depth=10)
 
         # get_all_paths
@@ -65,7 +67,5 @@ if __name__ == "__main__":
         # solve_path_constraint
         res_all = advfz_ex.fuzz_path(paths)
         pretty_print_results(len(paths), predicates_all, res_all)
-
-        # TODO - unsat core
 
         print("\n", "-" * 100, "\n")
