@@ -4,3 +4,4 @@ Icon?
 __pycache__/
 .ipynb_checkpoints/
 temp/
+outputs/

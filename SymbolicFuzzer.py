@@ -347,6 +347,41 @@ class SimpleSymbolicFuzzer(SimpleSymbolicFuzzer):
                 pass
         return predicates
 
+    def extract_constraints_with_traces(self, paths):
+        predicates_all, traces_all = [], []
+
+        def get_node_trace(_node):
+            return {"line": "{}-{}".format(_node.lineno, _node.end_lineno),
+                    "col": "{}-{}".format(_node.col_offset, _node.end_col_offset)}
+
+        for path in paths:
+            predicates, traces = [], []
+            for (idx, elt) in path:
+                if isinstance(elt.ast_node, ast.AnnAssign):
+                    if elt.ast_node.target.id in {'_if', '_while'}:
+                        node = elt.ast_node
+                        s = to_src(node.annotation)
+                        predicates.append(("%s" if idx == 0 else "z3.Not%s") % s)
+                        traces.append(get_node_trace(node))
+                    elif isinstance(elt.ast_node.annotation, ast.Call):
+                        assert elt.ast_node.annotation.func.id == self.fn_name
+                    else:
+                        node = elt.ast_node
+                        t = ast.Compare(node.target, [ast.Eq()], [node.value])
+                        predicates.append(to_src(t))
+                        traces.append(get_node_trace(node))
+                elif isinstance(elt.ast_node, ast.Assign):
+                    node = elt.ast_node
+                    t = ast.Compare(node.targets[0], [ast.Eq()], [node.value])
+                    predicates.append(to_src(t))
+                    traces.append(get_node_trace(node))
+                else:
+                    pass
+            predicates_all.append(predicates)
+            traces_all.append(traces)
+
+        return predicates_all, traces_all
+
 
 # Fuzzing with Simple Symbolic Fuzzer
 from contextlib import contextmanager
@@ -361,25 +396,28 @@ def checkpoint(z3solver):
 
 class SimpleSymbolicFuzzer(SimpleSymbolicFuzzer):
     def solve_path_constraint(self, path):
-        # re-initializing does not seem problematic.
-        # a = z3.Int('a').get_id() remains the same.
-        constraints = self.extract_constraints(path)
-        decl = define_symbolic_vars(self.used_variables, '')
-        exec(decl)
+        try:
+            # re-initializing does not seem problematic.
+            # a = z3.Int('a').get_id() remains the same.
+            constraints = self.extract_constraints(path)
+            decl = define_symbolic_vars(self.used_variables, '')
+            exec(decl)
 
-        solutions = {}
-        with checkpoint(self.z3):
-            st = 'self.z3.add(%s)' % ', '.join(constraints)
-            eval(st)
-            if self.z3.check() != z3.sat:
-                return {}
-            m = self.z3.model()
-            solutions = {d.name(): m[d] for d in m.decls()}
-            my_args = {k: solutions.get(k, None) for k in self.fn_args}
-        predicate = 'z3.And(%s)' % ','.join(
-            ["%s == %s" % (k, v) for k, v in my_args.items()])
-        eval('self.z3.add(z3.Not(%s))' % predicate)
-        return my_args
+            solutions = {}
+            with checkpoint(self.z3):
+                st = 'self.z3.add(%s)' % ', '.join(constraints)
+                eval(st)
+                if self.z3.check() != z3.sat:
+                    return {}
+                m = self.z3.model()
+                solutions = {d.name(): m[d] for d in m.decls()}
+                my_args = {k: solutions.get(k, None) for k in self.fn_args}
+            predicate = 'z3.And(%s)' % ','.join(
+                ["%s == %s" % (k, v) for k, v in my_args.items()])
+            eval('self.z3.add(z3.Not(%s))' % predicate)
+            return my_args
+        except:
+            return None
 
 
 class SimpleSymbolicFuzzer(SimpleSymbolicFuzzer):
@@ -397,6 +435,19 @@ class SimpleSymbolicFuzzer(SimpleSymbolicFuzzer):
             if res:
                 return res
         return {}
+
+    def fuzz_path(self, paths):
+        res_all = []
+        for path in paths:
+            res = None
+            for i in range(self.max_tries):
+                res = self.solve_path_constraint(path)
+                if res:
+                    break
+            if not res:
+                res = "No Solution!"
+            res_all.append(res)
+        return res_all
 
 
 # AdvancedSymbolicFuzzer
