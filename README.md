@@ -143,4 +143,5 @@ We tested our tool with Python 3.7.3. Dependency (i.e. Z3-solver version) are li
 # References:
 
 •	SymbolicFuzzer: https://www.fuzzingbook.org/html/SymbolicFuzzer.html \
-•	Z3py: https://ericpony.github.io/z3py-tutorial/guide-examples.htm
+•	Z3py: https://ericpony.github.io/z3py-tutorial/guide-examples.htm \
+•	https://ericpony.github.io/z3py-tutorial/advanced-examples.htm 
