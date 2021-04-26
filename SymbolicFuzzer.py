@@ -351,8 +351,7 @@ class SimpleSymbolicFuzzer(SimpleSymbolicFuzzer):
         predicates_all, traces_all = [], []
 
         def get_node_trace(_node):
-            return {"line": "{}-{}".format(_node.lineno, _node.end_lineno),
-                    "col": "{}-{}".format(_node.col_offset, _node.end_col_offset)}
+            return {"line": "{}".format(_node.lineno), "col": "{}".format(_node.col_offset)}
 
         for path in paths:
             predicates, traces = [], []
@@ -445,7 +444,7 @@ class SimpleSymbolicFuzzer(SimpleSymbolicFuzzer):
                 if res:
                     break
             if not res:
-                res = "No Solution!"
+                res = "Unsatisfiable, No Solution!"
             res_all.append(res)
         return res_all
 
