@@ -3,13 +3,14 @@ from examples.check_triangle import *  # TODO - at least five examples
 
 
 def pretty_print_paths(paths_):
-    msg = "Total {} paths:".format(len(paths_))
+    msg = "Number of paths: {}".format(len(paths_))
     print("\n", msg, "\n", "-" * len(msg), "\n")
     for idx_p, path_ in enumerate(paths_):
         seq_lineno = []
         for (_, elt) in path_:
             seq_lineno.append(elt.ast_node.lineno)
-        seq_lineno = seq_lineno[:-1]  # entry and exit nodes are marked as same 1
+        if len(seq_lineno) > 1 and seq_lineno[0] == seq_lineno[-1]:
+            seq_lineno = seq_lineno[:-1]  # entry and exit nodes are same
         print("\tPath-{}: {}".format(idx_p + 1, seq_lineno))
     print()
 
@@ -63,7 +64,5 @@ if __name__ == "__main__":
         # solve_path_constraint
         res_all = symfz_ex.fuzz_path(paths)
         pretty_print_results(len(paths), predicates_all, res_all)
-
-        # TODO - unsat core
 
         print("\n", "-" * 100, "\n")

@@ -551,8 +551,7 @@ def to_single_assignment_predicates(path):
     for i, node in enumerate(path):
         ast_node = node.cfgnode.ast_node
         new_node = None
-        if isinstance(ast_node, ast.AnnAssign) and ast_node.target.id in {
-            'exit'}:
+        if isinstance(ast_node, ast.AnnAssign) and ast_node.target.id in {'exit'}:
             new_node = None
         elif isinstance(ast_node, ast.AnnAssign) and ast_node.target.id in {'enter'}:
             args = [
@@ -588,6 +587,57 @@ def to_single_assignment_predicates(path):
     return new_path
 
 
+def to_single_assignment_predicates_with_traces(path):
+    env = {}
+    new_path, new_trace = [], []
+
+    def get_node_trace(_node):
+        return {"line": "{}".format(_node.lineno), "col": "{}".format(_node.col_offset)}
+
+    for i, node in enumerate(path):
+        ast_node = node.cfgnode.ast_node
+        new_node, new_pos = None, None
+        if isinstance(ast_node, ast.AnnAssign) and ast_node.target.id in {'exit'}:
+            new_node, new_pos = None, None
+        elif isinstance(ast_node, ast.AnnAssign) and ast_node.target.id in {'enter'}:
+            args = [
+                ast.parse(
+                    "%s == _%s_0" %
+                    (a.id, a.id)).body[0].value for a in ast_node.annotation.args]
+            new_node = ast.Call(ast.Name('z3.And', None), args, [])
+            new_pos = get_node_trace(ast_node)
+        elif isinstance(ast_node, ast.AnnAssign) and ast_node.target.id in {'_if', '_while'}:
+            new_node = rename_variables(ast_node.annotation, env)
+            if node.order != 0:
+                assert node.order == 1
+                new_node = ast.Call(ast.Name('z3.Not', None), [new_node], [])
+            new_pos = get_node_trace(ast_node)
+        elif isinstance(ast_node, ast.AnnAssign):
+            assigned = ast_node.target.id
+            val = [rename_variables(ast_node.value, env)]
+            env[assigned] = 0 if assigned not in env else env[assigned] + 1
+            target = ast.Name('_%s_%d' %
+                              (ast_node.target.id, env[assigned]), None)
+            new_node = ast.Expr(ast.Compare(target, [ast.Eq()], val))
+            new_pos = get_node_trace(ast_node)
+        elif isinstance(ast_node, ast.Assign):
+            assigned = ast_node.targets[0].id
+            val = [rename_variables(ast_node.value, env)]
+            env[assigned] = 0 if assigned not in env else env[assigned] + 1
+            target = ast.Name('_%s_%d' %
+                              (ast_node.targets[0].id, env[assigned]), None)
+            new_node = ast.Expr(ast.Compare(target, [ast.Eq()], val))
+            new_pos = get_node_trace(ast_node)
+        elif isinstance(ast_node, (ast.Return, ast.Pass)):
+            new_node, new_pos = None, None
+        else:
+            s = "NI %s %s" % (type(ast_node), ast_node.target.id)
+            raise Exception(s)
+        new_path.append(new_node)
+        new_trace.append(new_pos)
+    return [new_path, new_trace]
+
+
 # Check Before You Loop
 def identifiers_with_types(identifiers, defined):
     with_types = dict(defined)
@@ -604,6 +654,20 @@ def identifiers_with_types(identifiers, defined):
 class AdvancedSymbolicFuzzer(AdvancedSymbolicFuzzer):
     def extract_constraints(self, path):
         return [to_src(p) for p in to_single_assignment_predicates(path) if p]
+
+    def extract_constraints_with_traces(self, paths):
+        predicates_all, traces_all = [], []
+        for path in paths:
+            path = path.get_path_to_root()
+            predicates_path, traces_path = [], []
+            predicates, traces = to_single_assignment_predicates_with_traces(path)
+            for p, t in zip(predicates, traces):
+                if p and t:
+                    predicates_path.append(to_src(p))
+                    traces_path.append(t)
+            predicates_all.append(predicates_path)
+            traces_all.append(traces_path)
+        return predicates_all, traces_all
 
 
 # Solving Path Constraints
@@ -654,8 +718,6 @@ class AdvancedSymbolicFuzzer(AdvancedSymbolicFuzzer):
             path_lst = new_paths
         return completed + path_lst
 
-
-class AdvancedSymbolicFuzzer(AdvancedSymbolicFuzzer):
     def can_be_satisfied(self, p):
         s2 = self.extract_constraints(p.get_path_to_root())
         s = z3.Solver()
@@ -686,6 +748,29 @@ class AdvancedSymbolicFuzzer(AdvancedSymbolicFuzzer):
                     completed.append(path)
             path_lst = new_paths
         return completed + path_lst
+
+
+class AdvancedSymbolicFuzzer(AdvancedSymbolicFuzzer):
+    def fuzz(self):
+        for i in range(self.max_tries):
+            res = self.solve_path_constraint(self.get_next_path())
+            if res:
+                return res
+        return {}
+
+    def fuzz_path(self, paths):
+        res_all = []
+        for path in paths:
+            path = path.get_path_to_root()
+            res = None
+            for i in range(self.max_tries):
+                res = self.solve_path_constraint(path)
+                if res:
+                    break
+            if not res:
+                res = "Unsatisfiable, No Solution!"
+            res_all.append(res)
+        return res_all
 
 
 if __name__ == "__main__":
