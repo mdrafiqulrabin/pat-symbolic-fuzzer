@@ -1,11 +1,11 @@
-# SA&T-Symbolic-Execution
-Project: 2021SP-COSC6386-Software Analysis & Testing \
+# PA&T-Symbolic-Execution
+Project: 2021SP-COSC6386-Program Analysis & Testing \
 Task: Write a symbolic fuzzer that can generate input values symbolically for a python function.
 
 - - -
 
 # Library:
-- Python 3.7.7
+- Python 3.7.3
 - z3-solver==4.8.10.0
 
 - - -
@@ -109,6 +109,11 @@ We tested our tool with Python 3.7.3. Dependency (i.e. Z3-solver version) are li
             Trace in File: [{'line': '2', 'col': '7'}, {'line': '11', 'col': '11'}]
     
     
+     Unsat Core: 
+     ----------- 
+     
+         <bound method Solver.unsat_core of [Not(And(a == 2, b == 2, c == 2)), a == b, a == c, Not(b == c)]>
+    
     
      Solve Path Constraint: 
      ---------------------- 
@@ -144,4 +149,4 @@ We tested our tool with Python 3.7.3. Dependency (i.e. Z3-solver version) are li
 
 •	SymbolicFuzzer: https://www.fuzzingbook.org/html/SymbolicFuzzer.html \
 •	Z3py: https://ericpony.github.io/z3py-tutorial/guide-examples.htm \
-•	https://ericpony.github.io/z3py-tutorial/advanced-examples.htm 
+•	UnsatCore: https://ericpony.github.io/z3py-tutorial/advanced-examples.htm 

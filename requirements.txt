@@ -1,2 +1,4 @@
 z3-solver==4.8.10.0
-
+astor==0.8.1
+networkx==2.5.1
+graphviz==0.16

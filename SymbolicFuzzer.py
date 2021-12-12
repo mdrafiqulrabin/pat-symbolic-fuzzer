@@ -412,9 +412,9 @@ class SimpleSymbolicFuzzer(SimpleSymbolicFuzzer):
                 eval(st)
                 if self.z3.check() != z3.sat:
                     if print_unsat == 0:
-                        print ("-------------------------------------------------------------------------------------------------")
-                        print("The following is an Unsat Core among the following sets of path constraints: ", self.z3.unsat_core)
-                        print ("-------------------------------------------------------------------------------------------------")
+                        msg = "Unsat Core:"
+                        print("\n", msg, "\n", "-" * len(msg), "\n")
+                        print("\t{}\n".format(str(self.z3.unsat_core).replace("\n", "").strip()))
                         print_unsat = 1
                     return {}
                 m = self.z3.model()
@@ -684,7 +684,7 @@ class AdvancedSymbolicFuzzer(AdvancedSymbolicFuzzer):
 # Solving Path Constraints
 class AdvancedSymbolicFuzzer(AdvancedSymbolicFuzzer):
     def solve_path_constraint(self, path):
-        global print_unsat 
+        global print_unsat
         # re-initializing does not seem problematic.
         # a = z3.Int('a').get_id() remains the same.
         constraints = self.extract_constraints(path)
@@ -701,9 +701,9 @@ class AdvancedSymbolicFuzzer(AdvancedSymbolicFuzzer):
             eval(st)
             if self.z3.check() != z3.sat:
                 if print_unsat == 0:
-                    print ("-------------------------------------------------------------------------------------------------")
-                    print("The following is an Unsat Core among the following sets of path constraints: ", self.z3.unsat_core)
-                    print ("-------------------------------------------------------------------------------------------------")
+                    msg = "Unsat Core:"
+                    print("\n", msg, "\n", "-" * len(msg), "\n")
+                    print("\t{}\n".format(str(self.z3.unsat_core).replace("\n", "").strip()))
                     print_unsat = 1
                 return {}
             m = self.z3.model()
